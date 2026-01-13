@@ -9,5 +9,17 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  user: {
+    additionalFields: {
+     role:{
+      type: "string",
+      input : false,
+      output : true,
+     } 
+    }
+  },
   trustedOrigins: ['http://localhost:3001'],
 });
+
+export type Session = typeof auth.$Infer.Session;
+export type User = typeof auth.$Infer.Session.user;

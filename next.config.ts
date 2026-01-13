@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+experimental: {
+    authInterrupts: true, // Active la fonctionnalité
+  },
 };
 
 export default nextConfig;

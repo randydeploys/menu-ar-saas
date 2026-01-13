@@ -18,6 +18,7 @@ model User {
   email         String    @unique // Ajouté @unique ici directement
   emailVerified Boolean   @default(false) // Important : ajouter le default
   image         String?
+  role          String?
   createdAt     DateTime  @default(now()) // Ajouter @default(now())
   updatedAt     DateTime  @updatedAt      // Ajouter @updatedAt
   sessions      Session[]

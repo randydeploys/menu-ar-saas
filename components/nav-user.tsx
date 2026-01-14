@@ -41,7 +41,6 @@ interface UserDropdownProps {
 
 export function NavUser( {user}: UserDropdownProps) {
   const { isMobile } = useSidebar()
-  console.log(user)
 
   return (
     <SidebarMenu>

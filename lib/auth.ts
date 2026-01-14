@@ -7,6 +7,14 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  session: {
+    additionalFields: {
+      accounts: {
+        type: "json",
+        output: true,
+      },
+    },
+  },
   socialProviders: {
     google: {
       enabled: true,
@@ -57,7 +65,8 @@ export const auth = betterAuth({
       input : false,
       output : true,
      } 
-    }
+    },
+    
   },
   trustedOrigins: ['http://localhost:3001'],
 });

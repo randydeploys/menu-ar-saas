@@ -3,6 +3,8 @@
 
 import { LoadingButton } from "@/components/loading-button";
 import { PasswordInput } from "@/components/password-input";
+import { GitHubIcon } from "@/components/icons/GitHubIcon";
+import { GoogleIcon } from "@/components/icons/GoogleIcon";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -74,6 +76,22 @@ export function SignInForm() {
     } else {
       toast.success("Signed in successfully");
       router.push(redirect ?? "/dashboard");
+    }
+  }
+
+   async function handleSocialSignIn(provider: "google" | "github") {
+    setError(null);
+    setLoading(true);
+
+    const { error } = await authClient.signIn.social({
+      provider,
+      callbackURL: redirect ?? "/dashboard",
+    });
+
+    setLoading(false);
+
+    if (error) {
+      setError(error.message || "Something went wrong");
     }
   }
 
@@ -159,6 +177,30 @@ export function SignInForm() {
             <LoadingButton type="submit" className="w-full" loading={loading}>
               Login
             </LoadingButton>
+
+            <div className="flex w-full flex-col items-center justify-between gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2"
+                disabled={loading}
+                onClick={() => handleSocialSignIn("google")}
+              >
+                <GoogleIcon width="0.98em" height="1em" />
+                Sign in with Google
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2"
+                disabled={loading}
+                onClick={() => handleSocialSignIn("github")}
+              >
+                <GitHubIcon />
+                Sign in with Github
+              </Button>
+            </div>
 
      
       

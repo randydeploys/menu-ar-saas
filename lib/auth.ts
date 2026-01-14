@@ -7,8 +7,27 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  socialProviders: {
+    google: {
+      enabled: true,
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    },
+    github: {
+      enabled: true,
+      clientId: process.env.GITHUB_CLIENT_ID!,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+    },
+  },
   emailAndPassword: {
     enabled: true,
+    async sendResetPassword({user, url}) {
+      await sendEmail({
+        to: user.email,
+        subject: "Reset your password",
+        text: `Please click on the link below to reset your password: ${url}`,
+      })
+    },
   },
   emailVerification: {
     sendOnSignUp: true,

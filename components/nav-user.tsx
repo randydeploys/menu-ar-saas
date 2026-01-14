@@ -86,7 +86,9 @@ export function NavUser( {user}: UserDropdownProps) {
               <DropdownMenuGroup>
               <DropdownMenuItem>
                 <IconUserCircle />
+                <Link href="/profile">
                 Account
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <IconCreditCard />

@@ -2,11 +2,38 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import prisma from "./prisma";
 import { sendEmail } from "./email";
+import { stripe } from "./stripe";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  databaseHooks: {
+    user: {
+     create:{
+      after:async(user)=>{
+        const stripeCustomer = await stripe.customers.create({
+          email: user.email,
+          name: user.name,
+        });
+
+        const stripeCustomerId = stripeCustomer.id;
+        if(!stripeCustomerId){
+          throw new Error("Stripe customer id not found");
+        }
+
+        await prisma.user.update({
+          where: {
+            id: user.id,
+          },
+          data: {
+            stripeCustomerId,
+          },
+        });
+      }
+     } 
+    }
+  },
   session: {
     additionalFields: {
       accounts: {
@@ -64,6 +91,14 @@ export const auth = betterAuth({
       type: "string",
       input : false,
       output : true,
+     } ,
+     plan:{
+      type: "string",
+      nullable: true,
+     } ,
+     stripeCustomerId:{
+      type: "string",
+      nullable: true,
      } 
     },
     

@@ -149,7 +149,7 @@ const data = {
 interface UserDropdownProps {
   user: User
 }
-export async function AppSidebar({user, ...props }: UserDropdownProps & React.ComponentProps<typeof Sidebar>) {
+export  function AppSidebar({user, ...props }: UserDropdownProps & React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -162,7 +162,7 @@ export async function AppSidebar({user, ...props }: UserDropdownProps & React.Co
             >
               <a href="#">
                 <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <span className="text-base font-semibold">Menu AR SaaS</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

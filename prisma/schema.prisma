@@ -18,11 +18,18 @@ model User {
   email         String    @unique // Ajouté @unique ici directement
   emailVerified Boolean   @default(false) // Important : ajouter le default
   image         String?
-  role          String?
+  role          String?   @default("USER")
   createdAt     DateTime  @default(now()) // Ajouter @default(now())
   updatedAt     DateTime  @updatedAt      // Ajouter @updatedAt
   sessions      Session[]
   accounts      Account[]
+  plan UserPlan @default(Free)
+  stripeCustomerId String?
+}
+
+enum UserPlan {
+  Free
+  Pro
 }
 
 model Session {

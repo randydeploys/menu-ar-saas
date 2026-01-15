@@ -54,7 +54,7 @@ export function NavUser( {user}: UserDropdownProps) {
                 
                <UserAvatar  name={user.name} image={user.image}/>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
+                <span className="truncate font-medium">{user.name}  - {user.plan}</span>
                 <span className="text-muted-foreground truncate text-xs">
                   {user.email}
                 </span>
@@ -74,7 +74,7 @@ export function NavUser( {user}: UserDropdownProps) {
                   <UserAvatar  name={user.name} image={user.image}/>
                
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
+                  <span className="truncate font-medium">{user.name} - {user.plan}</span>
                   <span className="text-muted-foreground truncate text-xs">
                     {user.email}
                   </span>
@@ -84,20 +84,21 @@ export function NavUser( {user}: UserDropdownProps) {
             <DropdownMenuSeparator />
             {user.role === "admin" && (  <AdminItem />)}
               <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/profile"      className="flex items-center gap-2 cursor-pointer"
+>
                 <IconUserCircle />
-                <Link href="/profile">
                 Account
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              {/* <DropdownMenuItem>
                 <IconCreditCard />
                 Billing
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <IconNotification />
                 Notifications
-              </DropdownMenuItem>
+              </DropdownMenuItem> */}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <SignOutItem />

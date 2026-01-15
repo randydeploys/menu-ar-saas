@@ -165,7 +165,7 @@ export function SignUpForm() {
               </div>
             )}
 
-            <LoadingButton type="submit" className="w-full" loading={loading}>
+            <LoadingButton type="submit" className="w-full " loading={loading}>
               Create an account
             </LoadingButton>
           </form>

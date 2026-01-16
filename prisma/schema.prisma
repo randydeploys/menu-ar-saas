@@ -12,6 +12,43 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+
+// ======================
+// Enums
+// ======================
+
+enum UserPlan {
+  Free
+  Pro
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum MenuVisibility {
+  DRAFT
+  PUBLIC
+  UNLISTED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  MODEL_3D
+}
+
+enum QrType {
+  MENU_PUBLIC_URL
+  DISH_PUBLIC_URL
+}
+
+// ======================
+// Auth models (yours, improved)
+// ======================
+
 model User {
   id            String    @id
   name          String
@@ -24,13 +61,18 @@ model User {
   sessions      Session[]
   accounts      Account[]
   plan UserPlan @default(Free)
-  stripeCustomerId String?
+  stripeCustomerId String?  @unique
+  proActivatedAt  DateTime?
+  
+  // App relations
+  restaurants     Restaurant[]
+  qrCodes         QrCode[]
+  analyticsEvents AnalyticsEvent[]
+
+  @@index([createdAt])
+  @@index([plan])
 }
 
-enum UserPlan {
-  Free
-  Pro
-}
 
 model Session {
   id        String   @id
@@ -74,4 +116,241 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("verification")
+}
+
+
+// ======================
+// Core domain: Restaurant / Menu / Category / Dish
+// ======================
+
+
+model Restaurant {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String
+  description String?
+  address     String?
+  city        String?
+  country     String?
+  phone       String?
+  website     String?
+
+  // Branding
+  logoUrl     String?
+  primaryColor String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  archivedAt  DateTime?
+
+  // Ownership
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Relations
+  menus       Menu[]
+  dishes      Dish[]
+  media       Media[]
+  qrCodes     QrCode[]
+  analyticsEvents AnalyticsEvent[]
+
+  @@unique([ownerId, slug]) // un owner ne peut pas avoir 2 restos même slug
+  @@index([ownerId])
+  @@index([slug])
+}
+
+model Menu {
+  id           String         @id @default(cuid())
+  name         String
+  slug         String
+  description  String?
+  visibility   MenuVisibility @default(DRAFT)
+
+  // Public access
+  publicUrlPath String?       // ex: /r/{restaurantSlug}/m/{menuSlug}
+  publishedAt   DateTime?
+  archivedAt    DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  restaurantId  String
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  categories    Category[]
+  qrCodes       QrCode[]
+  analyticsEvents AnalyticsEvent[]
+
+  @@unique([restaurantId, slug])
+  @@index([restaurantId])
+  @@index([visibility])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  sortOrder   Int      @default(0)
+  archivedAt  DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  menuId      String
+  menu        Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  dishes      DishOnCategory[]
+
+  @@unique([menuId, name])
+  @@index([menuId, sortOrder])
+}
+
+model Dish {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  priceCents  Int?
+  currency    String?  @default("EUR")
+  isAvailable Boolean  @default(true)
+
+  // Optional nutrition / tags
+  allergens   String[] @default([])
+  tags        String[] @default([])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  archivedAt  DateTime?
+
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  // Media
+  media        Media[]
+
+  // Category relation (many-to-many, with ordering)
+  categories   DishOnCategory[]
+
+  // QR + analytics
+  qrCodes      QrCode[]
+  analyticsEvents AnalyticsEvent[]
+
+  @@index([restaurantId])
+  @@index([isAvailable])
+}
+
+model DishOnCategory {
+  dishId     String
+  categoryId String
+  sortOrder  Int      @default(0)
+
+  dish       Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([dishId, categoryId])
+  @@index([categoryId, sortOrder])
+}
+
+// ======================
+// Media (images/videos/3D models)
+// ======================
+
+model Media {
+  id          String    @id @default(cuid())
+  type        MediaType
+  url         String
+  filename    String?
+  sizeBytes   Int?
+  mimeType    String?
+
+  // For 3D assets (optional)
+  posterUrl   String?
+  glbUrl      String?
+  usdzUrl     String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  archivedAt  DateTime?
+
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  dishId      String?
+  dish        Dish?     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId])
+  @@index([dishId])
+}
+
+// ======================
+// QR codes
+// ======================
+
+model QrCode {
+  id           String   @id @default(cuid())
+  type         QrType
+  targetUrl    String   // URL finale scannée
+  shortCode    String   @unique // utile si tu fais des short links
+  imageUrl     String?  // PNG/SVG généré stocké
+  scansCount   Int      @default(0)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  archivedAt   DateTime?
+
+  // Ownership / scope
+  userId       String?
+  user         User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  restaurantId String?
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  menuId       String?
+  menu         Menu?       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  dishId       String?
+  dish         Dish?       @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId])
+  @@index([menuId])
+  @@index([dishId])
+  analyticsEvents AnalyticsEvent[]
+}
+
+// ======================
+// Analytics (simple, extensible)
+// ======================
+
+model AnalyticsEvent {
+  id           String   @id @default(cuid())
+  name         String   // e.g. "qr_scan", "menu_view", "dish_view", "ar_open"
+  createdAt    DateTime @default(now())
+
+  // optional context
+  ipAddress    String?
+  userAgent    String?
+  referrer     String?
+  country      String?
+  city         String?
+
+  // relations (optional)
+  userId       String?
+  user         User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  restaurantId String?
+  restaurant   Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  menuId       String?
+  menu         Menu?       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  dishId       String?
+  dish         Dish?       @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  qrCodeId     String?
+  qrCode       QrCode?     @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([name, createdAt])
+  @@index([restaurantId, createdAt])
+  @@index([menuId, createdAt])
+  @@index([dishId, createdAt])
 }

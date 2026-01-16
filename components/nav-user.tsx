@@ -91,11 +91,14 @@ export function NavUser( {user}: UserDropdownProps) {
                 Account
                 </Link>
               </DropdownMenuItem>
-              {/* <DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/plan"      className="flex items-center gap-2 cursor-pointer"
+>
                 <IconCreditCard />
-                Billing
+                Plan
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              {/* <DropdownMenuItem>
                 <IconNotification />
                 Notifications
               </DropdownMenuItem> */}

@@ -11,7 +11,7 @@ export const POST = async (req: NextRequest) => {
     if (!sig) {
         return new Response("Invalid signature", { status: 400 });
     }
-   
+
     let event: Stripe.Event;
 
     try {
@@ -27,28 +27,26 @@ export const POST = async (req: NextRequest) => {
     }
 
     switch (event.type) {
-        case "checkout.session.completed":
+        case "checkout.session.completed": {
             const session = event.data.object as Stripe.Checkout.Session;
 
-            const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
-            const planFromMeta = session.metadata?.plan as UserPlan | undefined;
-            
-            if (!customerId) throw new Error("Missing customerId in session");
-            if (!planFromMeta) throw new Error("Missing metadata.plan in session");
+            // on upgrade seulement si Stripe dit "paid"
+            if (session.payment_status !== "paid") break;
 
-            const user = await prisma.user.findFirst({
-                where: {
-                    stripeCustomerId: customerId,
-                },
+            const userId = session.metadata?.userId;
+            const planFromMeta = session.metadata?.plan as UserPlan | undefined;
+
+            if (!userId) throw new Error("Missing metadata.userId");
+            if (!planFromMeta) throw new Error("Missing metadata.plan");
+
+            await prisma.user.update({
+                where: { id: userId },
+                data: { plan: planFromMeta },
             });
-            if(!user){
-                throw new Error("User not found");
-            }
-           await prisma.user.update({
-          where: { id: user.id },
-          data: { plan: planFromMeta },
-        });
+
             break;
+        }
+
         default:
             break;
     }

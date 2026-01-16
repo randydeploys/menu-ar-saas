@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { getServerSession } from "@/lib/get-session";
 import { redirect, unauthorized } from "next/navigation";
+import { Toaster } from "sonner";
 
 export default async function RootLayout({
   children,
@@ -35,6 +36,8 @@ export default async function RootLayout({
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
               {children}
+                      <Toaster />
+
             </div>
           </div>
         </div>

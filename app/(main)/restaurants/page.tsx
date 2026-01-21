@@ -1,70 +1,91 @@
-import React from "react";
-import { getUser } from "@/lib/auth-server";
-import Link from "next/link";
-import prisma from "@/lib/prisma";
-import { createRestaurant } from "./action";
-import { RestaurantForm } from "./restaurant-form";
+// app/(dashboard)/restaurants/page.tsx
+import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
+import { getServerSession } from '@/lib/get-session';
+import { getRestaurantsByUserId } from '@/lib/db/restaurant';
+import { Button } from '@/components/ui/button';
+import { PlusCircle } from 'lucide-react';
+import Link from 'next/link';
+import { RestaurantsTableSkeleton } from '@/components/restaurant-table-skeleton';
+import { RestaurantsTable } from '@/components/data-table-restaurant';
+
+/**
+ * 🎯 Page liste des restaurants (React Server Component)
+ * 
+ * Principes appliqués :
+ * 1. Server Component pour fetch côté serveur
+ * 2. Suspense pour loading states
+ * 3. Auth check avec redirect
+ * 4. Metadata statique pour SEO
+ * 5. Pas de client-side fetch (meilleure perf)
+ */
+
+export const metadata = {
+  title: 'Mes Restaurants | Menu Digital',
+  description: 'Gérez vos restaurants et menus digitaux',
+};
 
 export default async function RestaurantsPage() {
-  const user = await getUser();
-  if (!user) {
-    return (
-      <main className="max-w-5xl mx-auto px-4 py-10">
-        <h1 className="text-2xl font-bold">Restaurants</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Vous devez être connecté pour accéder à cette page.
-        </p>
-        <Link className="mt-4 inline-block underline" href="/login">
-          Se connecter
-        </Link>
-      </main>
-    );
+  // 1. Vérifier l'auth
+  const sessionData = await getServerSession();
+
+  if (!sessionData?.user?.id) {
+    redirect('/sign-in');
   }
 
-  const restaurants = await prisma.restaurant.findMany({
-    where: { ownerId: user.id, archivedAt: null },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      city: true,
-      country: true,
-      address: true,
-      createdAt: true,
-    },
-  });
+  const userId = sessionData.user.id;
+
+  // 2. Fetch data côté serveur
+  // Note : En production, wrap ceci dans un try/catch si besoin
+  const restaurants = await getRestaurantsByUserId(userId);
 
   return (
-    <main className="max-w-5xl mx-auto px-4 py-10">
-      <div className="flex items-start justify-between gap-6">
+    <div className="container mx-auto py-8 space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Vos restaurants</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Gérez vos restaurants, menus, plats et QR codes.
+          <h1 className="text-3xl font-bold tracking-tight">
+            Mes Restaurants
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            {restaurants.length === 0
+              ? 'Aucun restaurant pour le moment'
+              : `${restaurants.length} restaurant${restaurants.length > 1 ? 's' : ''}`}
           </p>
         </div>
-      </div>
-      <div className="mt-6">
-        <div className="space-y-6">
-          {restaurants.map((restaurant) => (
-            <Link
-              key={restaurant.id}
-              href={`/restaurants/${restaurant.slug}`}
-              className="block p-6 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="flex flex-col gap-1">
-                <h2 className="text-xl font-bold text-gray-900">{restaurant.name}</h2>
-                <p className="text-sm text-gray-500">
-                  {restaurant.address ? restaurant.address : "Address not provided"}
-                </p>
 
-              </div>
-            </Link>
-          ))}
-        </div>
+        <Button asChild>
+          <Link href="/restaurants/new">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Nouveau restaurant
+          </Link>
+        </Button>
       </div>
-      <RestaurantForm />
-    </main>
+
+      {/* Table avec Suspense */}
+      <Suspense fallback={<RestaurantsTableSkeleton  />}>
+        <RestaurantsTable restaurants={restaurants} userId={userId} />
+      </Suspense>
+
+      {/* Empty state */}
+      {restaurants.length === 0 && (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
+          <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
+            <h3 className="mt-4 text-lg font-semibold">
+              Aucun restaurant
+            </h3>
+            <p className="mb-4 mt-2 text-sm text-muted-foreground">
+              Créez votre premier restaurant pour commencer à gérer vos menus digitaux.
+            </p>
+            <Button asChild>
+              <Link href="/restaurants/new">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Créer mon premier restaurant
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
